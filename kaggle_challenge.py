@@ -464,15 +464,16 @@ model = xgb.XGBClassifier(n_estimators=100, random_state=0)
 if True:
     # A parameter grid for XGBoost
     params = {
-            'min_child_weight': [1, 5, 10],
-            'gamma': [0.5, 1, 1.5, 2, 5],
+            'n_estimators': [50, 100, 200, 250],
+            'min_child_weight': [1, 5],
+            'gamma': [0,1, 0.5, 2, 5],
             'subsample': [0.6, 0.8, 1.0],
-            'colsample_bytree': [0.6, 0.8, 1.0],
-            'max_depth': [3, 4, 5]
+            'colsample_bytree': [0.8, 1.0],
+            'max_depth': [4, 6, 8]
             }
 
     # It's more efficient to use parallelization for GridSearch so we set n_jobs=1:
-    clf = xgb.XGBClassifier(n_estimators=100, n_jobs=-1, verbosity=0) 
+    clf = xgb.XGBClassifier(n_jobs=-1, verbosity=0) 
 
     grid = GridSearchCV(
         clf,
