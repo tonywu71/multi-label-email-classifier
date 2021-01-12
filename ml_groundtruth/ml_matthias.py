@@ -223,14 +223,10 @@ def main(n_iter=1000, n_jobs=8):
     random_search.fit(X_full, y)
 
     print(f"Random Search results: {random_search.cv_results_}\n\n")
-    print(f"Best parameters: {random_search.best_params_}")
 
     # Saving results in files
     with open('random_search_results.json', "w") as f:
             json.dump(random_search.cv_results_, f)
-    
-    with open('random_search_best_params.json', "w") as f:
-            json.dump(random_search.best_params_, f)
     
     return
 
