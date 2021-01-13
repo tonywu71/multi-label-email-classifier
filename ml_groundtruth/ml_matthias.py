@@ -2,6 +2,8 @@
 # 12/01/21
 # Matthias Lesage
 
+import json
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -211,7 +213,7 @@ def main(n_iter=1000, n_jobs=8):
     param_distributions=param_dist,
     scoring='neg_log_loss',
     n_iter=n_iter,
-    cv=2, # 5!
+    cv=5,
     verbose=1,
     random_state=1,
     n_jobs=n_jobs,
@@ -223,10 +225,12 @@ def main(n_iter=1000, n_jobs=8):
     print('| Meilleur paramètre :')
     print(random_search.best_params_)
 
-    print('| Résultats :')
-    print(random_search.cv_results_)
-    print('| End.')
-    return random_search.best_params_, random_search.best_params_
+    print(f"Random Search results: {random_search.cv_results_}\n\n")
+    print(f"Random Search best params: {random_search.best_params_}\n\n")
+
+    # Saving results in files
+    with open('random_search_results.json', "w") as f:
+            json.dump({"results": random_search.cv_results_, "best_params": random_search.best_params_}, f)
 
 if __name__=='__main__':
     main()
