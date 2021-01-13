@@ -5,6 +5,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import make_column_transformer
@@ -146,17 +147,14 @@ def main(n_iter=1000, n_jobs=8):
     test_df = pd.read_csv('test_ml.csv', index_col=0)
 
     X_full = train_df.copy(deep=True)
-    X_full_test = test_df.copy(deep=True)
 
     y_col = ['updates', 'personal', 'promotions', 'forums', 'purchases', 'travel', 'spam', 'social']
     y = X_full[y_col]
     X_full.drop(y_col, axis=1, inplace=True)
 
     X_full['date'] = pd.to_datetime(train_df['date'].apply(clean_date), format="%d %b %Y %X %z", utc=True)
-    X_full_test['date'] = pd.to_datetime(test_df['date'].apply(clean_date), format="%d %b %Y %X %z", utc=True)
 
     X_full['mail_type'] = X_full['mail_type'].apply(clean_mail_type)
-    X_full_test['mail_type'] = X_full_test['mail_type'].apply(clean_mail_type)
 
 
     date_cat = ['date']
@@ -195,18 +193,19 @@ def main(n_iter=1000, n_jobs=8):
    }
 
     param_dist = {
-        # 'columntransformer__pipeline-1__boundedlabeltransformer__org' : [1,20,40,50,60,80],
-        # 'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [1,10,20,30,50],
-        # 'columntransformer__boundedordinaltransformer__images' : [1, 5, 10, 15, 20],
-        # 'columntransformer__boundedordinaltransformer__urls' : [1, 30, 50, 70, 100],
-    #     'onevsrestclassifier__estimator__bootstrap': [True, False],
-    #     'onevsrestclassifier__estimator__max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-    #     'onevsrestclassifier__estimator__max_features': ['auto', 'sqrt'],
-    #     'onevsrestclassifier__estimator__min_samples_leaf': [1, 2, 4],
-    #     'onevsrestclassifier__estimator__min_samples_split': [2, 5, 10],
-    #     'onevsrestclassifier__estimator__n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+        'columntransformer__pipeline-1__boundedlabeltransformer__org' : [1,20,40,50,60,80],
+        'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [1,10,20,30,50],
+        'columntransformer__boundedordinaltransformer__images' : [1, 5, 10, 15, 20],
+        'columntransformer__boundedordinaltransformer__urls' : [1, 30, 50, 70, 100],
+        'onevsrestclassifier__estimator__bootstrap': [True, False],
+        'onevsrestclassifier__estimator__max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+        'onevsrestclassifier__estimator__max_features': ['auto', 'sqrt'],
+        'onevsrestclassifier__estimator__min_samples_leaf': [1, 2, 4],
+        'onevsrestclassifier__estimator__min_samples_split': [2, 5, 10],
+        'onevsrestclassifier__estimator__n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
     }
 
+    start = time.time()
     random_search =RandomizedSearchCV(
     estimator=classifiers['rfc'],
     param_distributions=param_dist,
@@ -219,9 +218,15 @@ def main(n_iter=1000, n_jobs=8):
     return_train_score=True)
 
     random_search.fit(X_full, y)
+    end = time.time()
+    print('|', str(end-start), 'elapsed.')
+    print('| Meilleur paramètre :')
+    print(random_search.best_params_)
 
+    print('| Résultats :')
     print(random_search.cv_results_)
-    return random_search.cv_results_
+    print('| End.')
+    return random_search.best_params_, random_search.best_params_
 
 if __name__=='__main__':
     main()
