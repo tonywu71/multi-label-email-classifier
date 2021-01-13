@@ -145,20 +145,15 @@ class BoundedOrdinalTransformer(BaseEstimator, TransformerMixin):
         return X_new.values
 
 def main(n_iter=1000, n_jobs=8):
-    train_df = pd.read_csv('train_ml.csv', index_col=0)
-    test_df = pd.read_csv('test_ml.csv', index_col=0)
-
-    X_full = train_df.copy(deep=True)
+    X_full = pd.read_csv('train_ml.csv', index_col=0)
 
     y_col = ['updates', 'personal', 'promotions', 'forums', 'purchases', 'travel', 'spam', 'social']
     y = X_full[y_col]
     X_full.drop(y_col, axis=1, inplace=True)
 
-    X_full['date'] = pd.to_datetime(train_df['date'].apply(clean_date), format="%d %b %Y %X %z", utc=True)
-
+    X_full['date'] = pd.to_datetime(X_full['date'].apply(clean_date), format="%d %b %Y %X %z", utc=True)
     X_full['mail_type'] = X_full['mail_type'].apply(clean_mail_type)
-
-
+    
     date_cat = ['date']
     bounded_label_cat = ['org', 'tld']
     bounded_ordinal_cat = ['images', 'urls']
@@ -185,7 +180,7 @@ def main(n_iter=1000, n_jobs=8):
         (DateTransformer(active=True), date_cat),
         (Bounded_label_lin, bounded_label_cat),
         (BoundedOrdinalTransformer(images=10, urls=50), bounded_ordinal_cat),
-        (OneHotEncoder(), label_cat),
+        (Label_lin, label_cat),
         (Countinuous_lin, continuous_cat),
         # remainder='passthrough'
     )
@@ -195,16 +190,14 @@ def main(n_iter=1000, n_jobs=8):
    }
 
     param_dist = {
-        'columntransformer__pipeline-1__boundedlabeltransformer__org' : [1,20,40,50,60,80],
-        'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [1,10,20,30,50],
-        'columntransformer__boundedordinaltransformer__images' : [1, 5, 10, 15, 20],
-        'columntransformer__boundedordinaltransformer__urls' : [1, 30, 50, 70, 100],
-        'onevsrestclassifier__estimator__bootstrap': [True, False],
-        'onevsrestclassifier__estimator__max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-        'onevsrestclassifier__estimator__max_features': ['auto', 'sqrt'],
-        'onevsrestclassifier__estimator__min_samples_leaf': [1, 2, 4],
-        'onevsrestclassifier__estimator__min_samples_split': [2, 5, 10],
-        'onevsrestclassifier__estimator__n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+        'columntransformer__pipeline-1__boundedlabeltransformer__org' : [20,50,55,60,70,90],
+        'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [10,15,20,25,30],
+        'columntransformer__boundedordinaltransformer__images' : [3,5,8,10,12,15],
+        'columntransformer__boundedordinaltransformer__urls' : [20,40,50,60,80],
+        'onevsrestclassifier__estimator__bootstrap': [True, True, False],
+        'onevsrestclassifier__estimator__min_samples_leaf': [1,1,2,3,5,10,50],
+        'onevsrestclassifier__estimator__min_samples_split': [2,2,3,4,5,10],
+        'onevsrestclassifier__estimator__n_estimators': [50,100,100,200,300,400,500,700]
     }
 
     start = time.time()
@@ -213,7 +206,7 @@ def main(n_iter=1000, n_jobs=8):
     param_distributions=param_dist,
     scoring='neg_log_loss',
     n_iter=n_iter,
-    cv=5,
+    cv=2, # à changer !
     verbose=1,
     random_state=1,
     n_jobs=n_jobs,
@@ -221,13 +214,22 @@ def main(n_iter=1000, n_jobs=8):
 
     random_search.fit(X_full, y)
     end = time.time()
+    print("------------")
+    print("Finished after", str(end-start), "seconds.")
+    print("------------")
 
-    print(f"Random Search results: {random_search.cv_results_}\n\n")
     print(f"Random Search best params: {random_search.best_params_}\n\n")
 
     # Saving results in files
-    with open('random_search_results.json', "w") as f:
-            json.dump({"results": random_search.cv_results_, "best_params": random_search.best_params_, "time":str(end-start)}, f)
+    parsed = json.loads(pd.DataFrame(random_search.cv_results_).to_json())
+    with open('results.json', "w") as f:
+            json.dump(parsed,f)
+    
+    print("------------")
+    print("JSON generated!")
+    print("------------")
+
+    return 'Success'
 
 if __name__=='__main__':
     main()
