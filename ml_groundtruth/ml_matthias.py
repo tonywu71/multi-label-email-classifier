@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import datetime
 
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import make_column_transformer
@@ -144,7 +145,7 @@ class BoundedOrdinalTransformer(BaseEstimator, TransformerMixin):
         #X_new['images/body'] = X['images']/X['chars_in_body']
         return X_new.values
 
-def main(n_iter=1000, n_jobs=8):
+def main(n_iter=200, n_jobs=-1, n_cv=5):
     X_full = pd.read_csv('train_ml.csv', index_col=0)
 
     y_col = ['updates', 'personal', 'promotions', 'forums', 'purchases', 'travel', 'spam', 'social']
@@ -153,13 +154,16 @@ def main(n_iter=1000, n_jobs=8):
 
     X_full['date'] = pd.to_datetime(X_full['date'].apply(clean_date), format="%d %b %Y %X %z", utc=True)
     X_full['mail_type'] = X_full['mail_type'].apply(clean_mail_type)
+
+    X_full['images/body'] = X_full['images']/X_full['chars_in_body']
+    X_full['salutations&designation'] = X_full['salutations'] & X_full['designation']
     
     date_cat = ['date']
     bounded_label_cat = ['org', 'tld']
     bounded_ordinal_cat = ['images', 'urls']
-    binary_cat = ['ccs', 'bcced', 'salutation', 'designation']
+    binary_cat = ['ccs', 'bcced', 'salutations', 'designation', 'salutations&designation']
     label_cat = ['mail_type']
-    continuous_cat = ['chars_in_subject', 'chars_in_body']
+    continuous_cat = ['chars_in_subject', 'chars_in_body', 'images/body']
 
     Bounded_label_lin = make_pipeline(
         BoundedLabelTransformer(org=56, tld=23),
@@ -182,7 +186,7 @@ def main(n_iter=1000, n_jobs=8):
         (BoundedOrdinalTransformer(images=10, urls=50), bounded_ordinal_cat),
         (Label_lin, label_cat),
         (Countinuous_lin, continuous_cat),
-        # remainder='passthrough'
+        (SimpleImputer(strategy='constant', fill_value=0), binary_cat)
     )
 
     classifiers = {
@@ -190,23 +194,26 @@ def main(n_iter=1000, n_jobs=8):
    }
 
     param_dist = {
-        'columntransformer__pipeline-1__boundedlabeltransformer__org' : [20,50,55,60,70,90],
-        'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [10,15,20,25,30],
-        'columntransformer__boundedordinaltransformer__images' : [3,5,8,10,12,15],
-        'columntransformer__boundedordinaltransformer__urls' : [20,40,50,60,80],
+        'columntransformer__pipeline-1__boundedlabeltransformer__org' : [20,40,50,50,60,70],
+        'columntransformer__pipeline-1__boundedlabeltransformer__tld' : [10,15,20,20,25,30],
+        'columntransformer__boundedordinaltransformer__images' : [3,5,8,8,10,12,15],
+        'columntransformer__boundedordinaltransformer__urls' : [10,20,20,30,40,50],
         'onevsrestclassifier__estimator__bootstrap': [True, True, False],
         'onevsrestclassifier__estimator__min_samples_leaf': [1,1,2,3,5,10,50],
-        'onevsrestclassifier__estimator__min_samples_split': [2,2,3,4,5,10],
-        'onevsrestclassifier__estimator__n_estimators': [50,100,100,200,300,400,500,700]
+        'onevsrestclassifier__estimator__min_samples_split': [2,3,4,4,5,7,10],
+        'onevsrestclassifier__estimator__n_estimators': [100,200,300,400,500,600,700,800]
     }
 
+    print("------------")
+    print("Begin RandomizedSearchCV")
+    print("------------")
     start = time.time()
     random_search =RandomizedSearchCV(
     estimator=classifiers['rfc'],
     param_distributions=param_dist,
     scoring='neg_log_loss',
     n_iter=n_iter,
-    cv=2, # à changer !
+    cv=n_cv,
     verbose=1,
     random_state=1,
     n_jobs=n_jobs,
@@ -215,15 +222,18 @@ def main(n_iter=1000, n_jobs=8):
     random_search.fit(X_full, y)
     end = time.time()
     print("------------")
-    print("Finished after", str(end-start), "seconds.")
+    print("Finished after", str(datetime.timedelta(seconds=(end-start))), "seconds.")
     print("------------")
 
     print(f"Random Search best params: {random_search.best_params_}\n\n")
 
     # Saving results in files
     parsed = json.loads(pd.DataFrame(random_search.cv_results_).to_json())
-    with open('results.json', "w") as f:
+    with open('results_summary.json', "w") as f:
             json.dump(parsed,f)
+
+    with open('results_best_params.json', "w") as f:
+            json.dump(random_search.best_params_,f)
     
     print("------------")
     print("JSON generated!")
