@@ -1,9 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=ml_groundtruth
 #SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
 #SBATCH --ntasks=1 
-#SBATCH --time=02:00:00
-#SBATCH --partition=cpu_med
+#SBATCH --time=17:00:00
+#SBATCH --partition=cpu_long
+#SBATCH --mail-user=tony.wu@student-cs.fr
+#SBATCH --mail-type=END
 
 # To clean and load modules defined at the compile and link phases
 module purge
