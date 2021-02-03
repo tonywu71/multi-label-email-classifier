@@ -20,4 +20,4 @@ cd $WORKDIR
 cd ml_groundtruth/
 
 # Run python script
-python ml_matthias.py
+python ml_matthias_estimators.py
