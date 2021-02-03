@@ -3,8 +3,8 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --ntasks=1 
-#SBATCH --time=17:00:00
-#SBATCH --partition=cpu_long
+#SBATCH --time=01:00:00
+#SBATCH --partition=cpu_med
 #SBATCH --mail-user=tony.wu@student-cs.fr
 #SBATCH --mail-type=END
 
