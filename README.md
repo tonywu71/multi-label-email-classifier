@@ -1,4 +1,4 @@
-# kaggle-challenge-cs
+# Email Multi-label Classifier - Kaggle Challenge
 
 This repository contains the work of the *GroundTruth* team for the Kaggle Challenge of the *Machine Learning* course at CentraleSupélec. Our team ended up 6th out of 61 teams.
 
